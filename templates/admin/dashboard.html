@@ -1,0 +1,190 @@
+{% extends 'base.html' %}
+{% block title %}Admin Dashboard{% endblock %}
+{% block page_title %}Admin Dashboard{% endblock %}
+
+{% block topbar_actions %}
+<a href="{{ url_for('admin_analytics') }}" class="btn btn-outline-primary btn-sm">View Analytics</a>
+{% endblock %}
+
+{% block content %}
+
+<!-- Stats row -->
+<div class="stats-grid">
+  <div class="stat-card">
+    <div class="stat-icon blue">
+      <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+    </div>
+    <div class="stat-info">
+      <div class="stat-number">{{ stats.total_students }}</div>
+      <div class="stat-label">Total Students</div>
+    </div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon green">
+      <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+    </div>
+    <div class="stat-info">
+      <div class="stat-number">{{ stats.placed_students }}</div>
+      <div class="stat-label">Placed Students</div>
+    </div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon blue">
+      <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
+    </div>
+    <div class="stat-info">
+      <div class="stat-number">{{ stats.active_companies }}</div>
+      <div class="stat-label">Active Drives</div>
+    </div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon amber">
+      <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+    </div>
+    <div class="stat-info">
+      <div class="stat-number">{{ stats.total_applications }}</div>
+      <div class="stat-label">Applications</div>
+    </div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon purple">
+      <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 12 20 22 4 22 4 12"/><rect x="2" y="7" width="20" height="5"/><line x1="12" y1="22" x2="12" y2="7"/></svg>
+    </div>
+    <div class="stat-info">
+      <div class="stat-number">{{ stats.pending_offers }}</div>
+      <div class="stat-label">Pending Offers</div>
+    </div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon cyan">
+      <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="7"/><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"/></svg>
+    </div>
+    <div class="stat-info">
+      <div class="stat-number">{{ stats.placement_pct }}%</div>
+      <div class="stat-label">Placement Rate</div>
+    </div>
+  </div>
+</div>
+
+<!-- Placement % progress bar -->
+<div class="card mb-4">
+  <div class="card-body" style="padding:16px 20px">
+    <div class="d-flex align-center justify-between mb-2">
+      <span style="font-size:13.5px;font-weight:600;color:var(--gray-700)">Overall Placement Progress</span>
+      <span style="font-size:13.5px;font-weight:700;color:var(--blue-700)">{{ stats.placed_students }}/{{ stats.total_students }} students placed</span>
+    </div>
+    <div style="background:var(--gray-100);border-radius:50px;height:10px;overflow:hidden">
+      <div style="width:{{ stats.placement_pct }}%;background:linear-gradient(90deg,#2563EB,#60A5FA);height:100%;border-radius:50px;transition:width 0.8s ease"></div>
+    </div>
+    <div class="d-flex justify-between mt-1" style="font-size:11.5px;color:var(--text-muted)">
+      <span>{{ stats.placement_pct }}% placed</span>
+      {% if stats.highest_package %}<span>Highest: {{ stats.highest_package | fmt_ctc }}</span>{% endif %}
+    </div>
+  </div>
+</div>
+
+<div class="grid-2" style="gap:20px">
+
+  <!-- Department stats -->
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+        Department-wise Placement
+      </div>
+      <a href="{{ url_for('admin_analytics') }}" class="btn btn-ghost btn-sm">Full Analytics →</a>
+    </div>
+    {% if dept_stats %}
+    <div class="table-wrapper">
+      <table class="data-table">
+        <thead><tr><th>Dept</th><th>Total</th><th>Placed</th><th>Rate</th></tr></thead>
+        <tbody>
+          {% for d in dept_stats %}
+          <tr>
+            <td class="fw-medium">{{ d.department }}</td>
+            <td>{{ d.total_students }}</td>
+            <td>{{ d.placed_students }}</td>
+            <td>
+              <div class="d-flex align-center gap-2">
+                <div style="flex:1;background:var(--gray-100);border-radius:50px;height:6px">
+                  <div style="width:{{ d.placement_percentage or 0 }}%;background:var(--blue-500);height:100%;border-radius:50px"></div>
+                </div>
+                <span style="font-size:12px;font-weight:600;color:var(--blue-700);min-width:36px">{{ d.placement_percentage }}%</span>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="empty-state" style="padding:32px"><h4>No data yet</h4></div>
+    {% endif %}
+  </div>
+
+  <!-- Right column -->
+  <div style="display:flex;flex-direction:column;gap:20px">
+
+    <!-- Top companies -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
+          Top Companies by CTC
+        </div>
+      </div>
+      {% if top_companies %}
+      <div class="table-wrapper">
+        <table class="data-table">
+          <thead><tr><th>Company</th><th>CTC</th><th>Status</th><th>Applicants</th></tr></thead>
+          <tbody>
+            {% for c in top_companies %}
+            <tr>
+              <td>
+                <div class="fw-medium">{{ c.name }}</div>
+                {% if c.is_dream %}<span class="badge-dream">DREAM</span>{% endif %}
+              </td>
+              <td><b>{{ c.ctc_lpa | fmt_ctc }}</b></td>
+              <td><span class="badge {{'badge-green' if c.status=='completed' else ('badge-blue' if c.status=='upcoming' else 'badge-amber')}}">{{ c.status|title }}</span></td>
+              <td>{{ c.applicants }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <div class="empty-state" style="padding:24px"><h4>No companies yet</h4></div>
+      {% endif %}
+    </div>
+
+    <!-- Recent Activity -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+          Recent Activity
+        </div>
+        <a href="{{ url_for('admin_audit') }}" class="btn btn-ghost btn-sm">Audit Log →</a>
+      </div>
+      {% if recent_activity %}
+      <div style="padding:4px 0">
+        {% for log in recent_activity %}
+        {% set ac = {'INSERT':'badge-green','UPDATE':'badge-amber','DELETE':'badge-red'} %}
+        <div style="display:flex;align-items:flex-start;gap:10px;padding:10px 16px;border-bottom:1px solid var(--gray-100)">
+          <span class="badge {{ ac.get(log.action_type,'badge-gray') }}" style="font-size:10px;flex-shrink:0">{{ log.action_type }}</span>
+          <div style="min-width:0">
+            <div style="font-size:13px;font-weight:500">{{ log.table_name|replace('_',' ')|title }}</div>
+            <div style="font-size:12px;color:var(--text-muted)">{{ log.user_email or 'System' }} &bull; {{ log.created_at | fmt_datetime }}</div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}
+      <div class="empty-state" style="padding:24px"><h4>No activity yet</h4></div>
+      {% endif %}
+    </div>
+
+  </div>
+</div>
+
+{% endblock %}

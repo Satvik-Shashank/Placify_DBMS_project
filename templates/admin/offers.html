@@ -1,0 +1,118 @@
+{% extends 'base.html' %}
+{% block title %}Offer Management{% endblock %}
+{% block page_title %}Offer Management{% endblock %}
+
+{% block topbar_actions %}
+{% if eligible_for_offer %}
+<button class="btn btn-primary btn-sm" data-modal="createOfferModal">+ Create Offer</button>
+{% endif %}
+{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+  <h1 class="page-heading">Offer Management</h1>
+  <p class="page-sub">Create and track offers. Accepting triggers auto-withdrawal of other applications via stored procedures.</p>
+</div>
+
+<!-- Filters -->
+<form method="GET" class="filter-bar mb-4">
+  <select class="form-control form-select" name="company">
+    <option value="">All Companies</option>
+    {% for c in companies %}<option value="{{ c.company_id }}" {{ 'selected' if comp_f==c.company_id|string }}>{{ c.name }}</option>{% endfor %}
+  </select>
+  <select class="form-control form-select" name="status">
+    <option value="">All Statuses</option>
+    {% for s in ['pending','accepted','declined','expired'] %}
+    <option value="{{ s }}" {{ 'selected' if stat_f==s }}>{{ s|title }}</option>
+    {% endfor %}
+  </select>
+  <button type="submit" class="btn btn-primary btn-sm">Filter</button>
+  <a href="{{ url_for('admin_offers') }}" class="btn btn-secondary btn-sm">Reset</a>
+</form>
+
+<div class="card">
+  {% if offers %}
+  <div class="table-wrapper">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Student</th>
+          <th>Company</th>
+          <th>Role</th>
+          <th>CTC</th>
+          <th>Location</th>
+          <th>Deadline</th>
+          <th>Status</th>
+          <th>Joined</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for o in offers %}
+        {% set osc = {'pending':'badge-amber','accepted':'badge-green','declined':'badge-red','expired':'badge-gray'} %}
+        <tr>
+          <td>
+            <div class="fw-medium">{{ o.student_name }}</div>
+            <div class="text-muted">{{ o.roll_number }} &bull; {{ o.department }}</div>
+          </td>
+          <td>
+            <div class="fw-medium">{{ o.company_name }}</div>
+            {% if o.is_dream %}<span class="badge-dream">DREAM</span>{% endif %}
+          </td>
+          <td class="text-muted">{{ o.offered_role }}</td>
+          <td><b style="color:var(--blue-700)">{{ o.offered_ctc | fmt_ctc }}</b></td>
+          <td class="text-muted">{{ o.job_location or '—' }}</td>
+          <td class="text-muted">{{ o.acceptance_deadline | fmt_date }}</td>
+          <td><span class="badge {{ osc.get(o.status,'badge-gray') }}">{{ o.status|title }}</span></td>
+          <td class="text-muted">{{ o.joining_date | fmt_date if o.joining_date else '—' }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="empty-state" style="padding:60px">
+    <svg xmlns="http://www.w3.org/2000/svg" width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="20 12 20 22 4 22 4 12"/><rect x="2" y="7" width="20" height="5"/><line x1="12" y1="22" x2="12" y2="7"/></svg>
+    <h4>No offers created yet</h4>
+    <p>Select candidates from the Applications page, then create offers here.</p>
+  </div>
+  {% endif %}
+</div>
+
+<!-- Create Offer Modal -->
+<div class="modal-backdrop" id="createOfferModal">
+  <div class="modal modal-lg">
+    <div class="modal-header">
+      <div class="modal-title">Create Offer</div>
+      <button class="modal-close" data-modal-close>×</button>
+    </div>
+    <div class="modal-body">
+      <form method="POST" action="{{ url_for('admin_create_offer') }}">
+        <div class="form-group">
+          <label class="form-label">Student (Selected Application) *</label>
+          <select class="form-control form-select" name="application_id" required>
+            <option value="">Select candidate...</option>
+            {% for a in eligible_for_offer %}
+            <option value="{{ a.application_id }}">{{ a.student_name }} ({{ a.roll_number }}) — {{ a.company_name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label class="form-label">Offered CTC (LPA) *</label><input type="number" step="0.01" class="form-control" name="offered_ctc" required></div>
+          <div class="form-group"><label class="form-label">Offered Role *</label><input class="form-control" name="offered_role" required></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label class="form-label">Job Location</label><input class="form-control" name="job_location"></div>
+          <div class="form-group"><label class="form-label">Joining Date</label><input type="date" class="form-control" name="joining_date"></div>
+        </div>
+        <div class="form-group"><label class="form-label">Acceptance Deadline *</label><input type="datetime-local" class="form-control" name="acceptance_deadline" required></div>
+        <div class="modal-footer" style="padding:0;margin-top:8px;border:none">
+          <button type="button" class="btn btn-secondary" data-modal-close>Cancel</button>
+          <button type="submit" class="btn btn-primary">Create Offer</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+{% endblock %}

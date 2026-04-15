@@ -1,0 +1,98 @@
+{% extends 'base.html' %}
+{% block title %}Applications{% endblock %}
+{% block page_title %}Applications{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+  <h1 class="page-heading">Applications</h1>
+  <p class="page-sub">Manage all student applications. Shortlist or reject candidates. <span class="badge badge-blue" style="font-size:11px">Backed by vw_active_applications</span></p>
+</div>
+
+<!-- Filters -->
+<form method="GET" class="filter-bar mb-4">
+  <select class="form-control form-select" name="company">
+    <option value="">All Companies</option>
+    {% for c in companies %}
+    <option value="{{ c.company_id }}" {{ 'selected' if comp_f==c.company_id|string }}>{{ c.name }}</option>
+    {% endfor %}
+  </select>
+  <select class="form-control form-select" name="status">
+    <option value="">All Statuses</option>
+    {% for s in ['applied','in_progress','selected','rejected','withdrawn'] %}
+    <option value="{{ s }}" {{ 'selected' if stat_f==s }}>{{ s|replace('_',' ')|title }}</option>
+    {% endfor %}
+  </select>
+  <select class="form-control form-select" name="dept">
+    <option value="">All Depts</option>
+    {% for d in ['CSE','ECE','IT','ME','CE','EEE'] %}
+    <option value="{{ d }}" {{ 'selected' if dept_f==d }}>{{ d }}</option>
+    {% endfor %}
+  </select>
+  <button type="submit" class="btn btn-primary btn-sm">Filter</button>
+  <a href="{{ url_for('admin_applications') }}" class="btn btn-secondary btn-sm">Reset</a>
+</form>
+
+<div class="card">
+  {% if applications %}
+  <div class="table-wrapper">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Student</th>
+          <th>Dept</th>
+          <th>CGPA / Backlogs</th>
+          <th>Company</th>
+          <th>Status</th>
+          <th>Applied On</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for a in applications %}
+        {% set sc = {'applied':'badge-blue','in_progress':'badge-amber','selected':'badge-green','rejected':'badge-red','withdrawn':'badge-gray'} %}
+        <tr>
+          <td>
+            <div class="fw-medium">{{ a.student_name }}</div>
+            <div class="text-muted">{{ a.roll_number }}</div>
+          </td>
+          <td><span class="badge badge-blue">{{ a.department }}</span></td>
+          <td>
+            <b>{{ a.cgpa }}</b>
+            <span class="badge {{ 'badge-red' if a.backlogs > 0 else 'badge-gray' }}" style="margin-left:4px">{{ a.backlogs }}B</span>
+          </td>
+          <td>
+            <div class="fw-medium">{{ a.company_name }}</div>
+            {% if a.is_dream %}<span class="badge-dream">DREAM</span>{% endif %}
+          </td>
+          <td><span class="badge {{ sc.get(a.status,'badge-gray') }}">{{ a.status|replace('_',' ')|title }}</span></td>
+          <td class="text-muted">{{ a.applied_at | fmt_date }}</td>
+          <td>
+            {% if a.status == 'applied' %}
+            <div class="d-flex gap-2">
+              <form method="POST" action="{{ url_for('admin_shortlist', app_id=a.application_id) }}">
+                <button class="btn btn-outline-primary btn-sm">Shortlist</button>
+              </form>
+              <form method="POST" action="{{ url_for('admin_reject', app_id=a.application_id) }}">
+                <button class="btn btn-ghost btn-sm" style="color:var(--red-600)">Reject</button>
+              </form>
+            </div>
+            {% else %}
+            <span class="text-muted text-sm">—</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="empty-state" style="padding:60px">
+    <svg xmlns="http://www.w3.org/2000/svg" width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/></svg>
+    <h4>No applications found</h4>
+    <p>Applications will appear here once students start applying.</p>
+  </div>
+  {% endif %}
+</div>
+
+{% endblock %}

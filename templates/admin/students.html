@@ -1,0 +1,200 @@
+{% extends 'base.html' %}
+{% block title %}Student Management{% endblock %}
+{% block page_title %}Student Management{% endblock %}
+
+{% block topbar_actions %}
+<button class="btn btn-primary btn-sm" data-modal="addStudentModal">+ Add Student</button>
+{% endblock %}
+
+{% block content %}
+
+<!-- Summary -->
+<div class="stats-grid" style="grid-template-columns:repeat(3,1fr);margin-bottom:20px">
+  <div class="stat-card">
+    <div class="stat-icon blue"><svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg></div>
+    <div class="stat-info"><div class="stat-number">{{ total_students }}</div><div class="stat-label">Total Students</div></div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon green"><svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></div>
+    <div class="stat-info"><div class="stat-number">{{ placed_students }}</div><div class="stat-label">Placed</div></div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon amber"><svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
+    <div class="stat-info"><div class="stat-number">{{ total_students - placed_students }}</div><div class="stat-label">Unplaced</div></div>
+  </div>
+</div>
+
+<!-- Filters -->
+<form method="GET" class="filter-bar mb-4">
+  <div class="search-wrap">
+    <svg class="search-icon" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+    <input type="text" class="form-control" name="search" placeholder="Search name, roll, email..." value="{{ search }}">
+  </div>
+  <select class="form-control form-select" name="dept">
+    <option value="">All Departments</option>
+    {% for d in ['CSE','ECE','IT','ME','CE','EEE'] %}
+    <option value="{{ d }}" {{ 'selected' if dept==d }}>{{ d }}</option>
+    {% endfor %}
+  </select>
+  <select class="form-control form-select" name="placed">
+    <option value="">All Students</option>
+    <option value="1" {{ 'selected' if placed=='1' }}>Placed Only</option>
+    <option value="0" {{ 'selected' if placed=='0' }}>Unplaced Only</option>
+  </select>
+  <button type="submit" class="btn btn-primary btn-sm">Filter</button>
+  <a href="{{ url_for('admin_students') }}" class="btn btn-secondary btn-sm">Reset</a>
+</form>
+
+<!-- Table -->
+<div class="card">
+  {% if students %}
+  <div class="table-wrapper">
+    <table class="data-table" id="studentTable">
+      <thead>
+        <tr>
+          <th>Roll No.</th>
+          <th>Name</th>
+          <th>Dept</th>
+          <th>Batch</th>
+          <th>CGPA</th>
+          <th>Backlogs</th>
+          <th>Status</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for s in students %}
+        <tr>
+          <td class="fw-medium">{{ s.roll_number }}</td>
+          <td>
+            <div class="fw-medium">{{ s.name }}</div>
+            <div class="text-muted">{{ s.email }}</div>
+          </td>
+          <td><span class="badge badge-blue">{{ s.department }}</span></td>
+          <td>{{ s.batch_year }}</td>
+          <td><b style="color:{{ 'var(--green-600)' if s.cgpa >= 8 else ('var(--amber-600)' if s.cgpa >= 6 else 'var(--red-600)') }}">{{ s.cgpa }}</b></td>
+          <td>
+            <span class="badge {{ 'badge-red' if s.backlogs > 0 else 'badge-green' }}">{{ s.backlogs }}</span>
+          </td>
+          <td>
+            <span class="badge {{ 'badge-green' if s.is_placed else 'badge-gray' }}">
+              {% if s.is_placed %}{{ s.placement_type|title if s.placement_type else 'Placed' }}{% else %}Unplaced{% endif %}
+            </span>
+          </td>
+          <td>
+            <div class="d-flex gap-2">
+              <button class="btn btn-ghost btn-sm" title="Edit"
+                onclick="fillModal('editStudentModal', {cgpa:'{{ s.cgpa }}',backlogs:'{{ s.backlogs }}',is_placed:'{{ 1 if s.is_placed else 0 }}',placement_type:'{{ s.placement_type or '' }}'});
+                         document.getElementById('editStudentForm').action='{{ url_for('admin_update_student', sid=s.student_id) }}';
+                         openModal('editStudentModal')">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+              </button>
+              <form method="POST" action="{{ url_for('admin_delete_student', sid=s.student_id) }}">
+                <button type="submit" class="btn btn-ghost btn-sm" title="Delete"
+                  style="color:var(--red-600)"
+                  onclick="return confirm('Delete {{ s.name }}? This cannot be undone.')">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>
+                </button>
+              </form>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="empty-state" style="padding:60px">
+    <svg xmlns="http://www.w3.org/2000/svg" width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+    <h4>No students found</h4>
+    <p>Try adjusting your filters or add a new student.</p>
+  </div>
+  {% endif %}
+</div>
+
+<!-- Add Student Modal -->
+<div class="modal-backdrop" id="addStudentModal">
+  <div class="modal modal-lg">
+    <div class="modal-header">
+      <div class="modal-title">Add New Student</div>
+      <button class="modal-close" data-modal-close>×</button>
+    </div>
+    <div class="modal-body">
+      <form method="POST" action="{{ url_for('admin_add_student') }}">
+        <div class="form-row">
+          <div class="form-group"><label class="form-label">Full Name *</label><input class="form-control" name="name" required></div>
+          <div class="form-group"><label class="form-label">Roll Number *</label><input class="form-control" name="roll_number" required></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label class="form-label">Email *</label><input type="email" class="form-control" name="email" required></div>
+          <div class="form-group"><label class="form-label">Phone *</label><input class="form-control" name="phone" pattern="[0-9]{10}" placeholder="10 digits" required></div>
+        </div>
+        <div class="form-row-3">
+          <div class="form-group">
+            <label class="form-label">Department *</label>
+            <select class="form-control form-select" name="department" required>
+              {% for d in ['CSE','ECE','IT','ME','CE','EEE'] %}<option>{{ d }}</option>{% endfor %}
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Gender *</label>
+            <select class="form-control form-select" name="gender" required>
+              <option value="male">Male</option><option value="female">Female</option><option value="other">Other</option>
+            </select>
+          </div>
+          <div class="form-group"><label class="form-label">Date of Birth *</label><input type="date" class="form-control" name="dob" required></div>
+        </div>
+        <div class="form-row-3">
+          <div class="form-group"><label class="form-label">Batch Year *</label><input type="number" class="form-control" name="batch_year" min="2020" max="2030" value="2025" required></div>
+          <div class="form-group"><label class="form-label">CGPA *</label><input type="number" class="form-control" name="cgpa" step="0.01" min="0" max="10" required></div>
+          <div class="form-group"><label class="form-label">Backlogs</label><input type="number" class="form-control" name="backlogs" min="0" value="0"></div>
+        </div>
+        <div class="form-group"><label class="form-label">Password</label><input class="form-control" name="password" value="Placify@123"><div class="form-hint">Default: Placify@123</div></div>
+        <div class="modal-footer" style="padding:0;margin-top:4px;border:none">
+          <button type="button" class="btn btn-secondary" data-modal-close>Cancel</button>
+          <button type="submit" class="btn btn-primary">Add Student</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Edit Student Modal -->
+<div class="modal-backdrop" id="editStudentModal">
+  <div class="modal modal-sm">
+    <div class="modal-header">
+      <div class="modal-title">Edit Student</div>
+      <button class="modal-close" data-modal-close>×</button>
+    </div>
+    <div class="modal-body">
+      <form method="POST" id="editStudentForm">
+        <div class="form-row">
+          <div class="form-group"><label class="form-label">CGPA</label><input type="number" class="form-control" name="cgpa" step="0.01" min="0" max="10" required></div>
+          <div class="form-group"><label class="form-label">Backlogs</label><input type="number" class="form-control" name="backlogs" min="0" required></div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Placement Status</label>
+          <select class="form-control form-select" name="is_placed">
+            <option value="0">Unplaced</option>
+            <option value="1">Placed</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Placement Type</label>
+          <select class="form-control form-select" name="placement_type">
+            <option value="">—</option>
+            <option value="regular">Regular</option>
+            <option value="dream">Dream</option>
+            <option value="super_dream">Super Dream</option>
+          </select>
+        </div>
+        <div class="modal-footer" style="padding:0;margin-top:4px;border:none">
+          <button type="button" class="btn btn-secondary" data-modal-close>Cancel</button>
+          <button type="submit" class="btn btn-primary">Save Changes</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+{% endblock %}

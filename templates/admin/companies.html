@@ -1,0 +1,166 @@
+{% extends 'base.html' %}
+{% block title %}Company Drives{% endblock %}
+{% block page_title %}Company Drives{% endblock %}
+
+{% block topbar_actions %}
+<button class="btn btn-primary btn-sm" data-modal="addCompanyModal">+ Add Company</button>
+{% endblock %}
+
+{% block content %}
+
+<!-- Filters -->
+<form method="GET" class="filter-bar mb-4">
+  <div class="search-wrap">
+    <svg class="search-icon" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+    <input type="text" class="form-control" name="search" placeholder="Search company or role..." value="{{ search }}">
+  </div>
+  <select class="form-control form-select" name="status">
+    <option value="">All Statuses</option>
+    {% for s in ['upcoming','ongoing','completed','cancelled'] %}
+    <option value="{{ s }}" {{ 'selected' if status_f==s }}>{{ s|title }}</option>
+    {% endfor %}
+  </select>
+  <button type="submit" class="btn btn-primary btn-sm">Filter</button>
+  <a href="{{ url_for('admin_companies') }}" class="btn btn-secondary btn-sm">Reset</a>
+</form>
+
+<div class="card">
+  {% if companies %}
+  <div class="table-wrapper">
+    <table class="data-table">
+      <thead>
+        <tr><th>Company</th><th>Role</th><th>CTC</th><th>Type</th><th>Visit Date</th><th>Deadline</th><th>Applicants</th><th>Status</th><th>Actions</th></tr>
+      </thead>
+      <tbody>
+        {% for c in companies %}
+        {% set sc = {'upcoming':'badge-blue','ongoing':'badge-amber','completed':'badge-green','cancelled':'badge-red'} %}
+        <tr>
+          <td>
+            <div class="fw-medium">{{ c.name }}</div>
+            {% if c.is_dream %}<span class="badge-dream">DREAM</span>{% endif %}
+            {% if c.industry %}<div class="text-muted">{{ c.industry }}</div>{% endif %}
+          </td>
+          <td class="text-muted">{{ c.job_role }}</td>
+          <td><b>{{ c.ctc_lpa | fmt_ctc }}</b></td>
+          <td><span class="badge badge-gray">{{ c.company_type|replace('_',' ')|title }}</span></td>
+          <td class="text-muted">{{ c.visit_date | fmt_date }}</td>
+          <td class="text-muted">{{ c.registration_deadline | fmt_date }}</td>
+          <td><span class="badge badge-blue">{{ c.applicants }}</span></td>
+          <td><span class="badge {{ sc.get(c.status,'badge-gray') }}">{{ c.status|title }}</span></td>
+          <td>
+            <button class="btn btn-ghost btn-sm" title="Edit"
+              onclick="fillModal('editCompanyModal',{status:'{{ c.status }}',visit_date:'{{ c.visit_date }}',registration_deadline:'{{ c.registration_deadline }}'});
+                       document.getElementById('editCompanyForm').action='{{ url_for('admin_update_company', cid=c.company_id) }}';
+                       openModal('editCompanyModal')">
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+            </button>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="empty-state" style="padding:60px">
+    <svg xmlns="http://www.w3.org/2000/svg" width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
+    <h4>No companies yet</h4>
+    <p>Add your first company drive to get started.</p>
+  </div>
+  {% endif %}
+</div>
+
+<!-- Add Company Modal -->
+<div class="modal-backdrop" id="addCompanyModal">
+  <div class="modal modal-lg">
+    <div class="modal-header">
+      <div class="modal-title">Add Company Drive</div>
+      <button class="modal-close" data-modal-close>×</button>
+    </div>
+    <div class="modal-body">
+      <form method="POST" action="{{ url_for('admin_add_company') }}">
+        <div class="form-row">
+          <div class="form-group"><label class="form-label">Company Name *</label><input class="form-control" name="name" required></div>
+          <div class="form-group"><label class="form-label">Industry</label><input class="form-control" name="industry" placeholder="e.g. Technology, Finance"></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Company Type *</label>
+            <select class="form-control form-select" name="company_type" required>
+              {% for t in ['product','service','startup','mnc','psu'] %}<option value="{{ t }}">{{ t|upper }}</option>{% endfor %}
+            </select>
+          </div>
+          <div class="form-group"><label class="form-label">Job Role *</label><input class="form-control" name="job_role" required></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label class="form-label">CTC (LPA) *</label><input type="number" step="0.01" class="form-control" name="ctc_lpa" required></div>
+          <div class="form-group"><label class="form-label">Job Location</label><input class="form-control" name="job_location"></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label class="form-label">Visit Date *</label><input type="date" class="form-control" name="visit_date" required></div>
+          <div class="form-group"><label class="form-label">Registration Deadline *</label><input type="datetime-local" class="form-control" name="registration_deadline" required></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label class="form-label">Website</label><input type="url" class="form-control" name="website" placeholder="https://"></div>
+          <div class="form-group" style="align-self:end">
+            <label class="form-label" style="display:flex;align-items:center;gap:6px;cursor:pointer">
+              <input type="checkbox" name="is_dream" value="1"> Mark as Dream Company
+            </label>
+          </div>
+        </div>
+        <div class="form-group"><label class="form-label">Job Description</label><textarea class="form-control" name="job_description" rows="2"></textarea></div>
+
+        <div class="divider"></div>
+        <div style="font-size:13.5px;font-weight:600;color:var(--gray-700);margin-bottom:10px">Eligibility Criteria</div>
+        <div class="form-row">
+          <div class="form-group"><label class="form-label">Min CGPA</label><input type="number" step="0.01" class="form-control" name="min_cgpa" value="6.0"></div>
+          <div class="form-group"><label class="form-label">Max Backlogs Allowed</label><input type="number" class="form-control" name="max_backlogs" value="0"></div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Allowed Departments</label>
+          <div class="checkbox-group">
+            {% for d in ['CSE','ECE','IT','ME','CE','EEE'] %}
+            <label class="checkbox-item"><input type="checkbox" name="allowed_departments" value="{{ d }}" checked> {{ d }}</label>
+            {% endfor %}
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label class="form-label">Min Batch Year</label><input type="number" class="form-control" name="min_batch_year" placeholder="Optional"></div>
+          <div class="form-group"><label class="form-label">Max Batch Year</label><input type="number" class="form-control" name="max_batch_year" placeholder="Optional"></div>
+        </div>
+
+        <div class="modal-footer" style="padding:0;margin-top:8px;border:none">
+          <button type="button" class="btn btn-secondary" data-modal-close>Cancel</button>
+          <button type="submit" class="btn btn-primary">Add Company</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Edit Company Modal -->
+<div class="modal-backdrop" id="editCompanyModal">
+  <div class="modal modal-sm">
+    <div class="modal-header">
+      <div class="modal-title">Update Company</div>
+      <button class="modal-close" data-modal-close>×</button>
+    </div>
+    <div class="modal-body">
+      <form method="POST" id="editCompanyForm">
+        <div class="form-group">
+          <label class="form-label">Status</label>
+          <select class="form-control form-select" name="status">
+            {% for s in ['upcoming','ongoing','completed','cancelled'] %}<option value="{{ s }}">{{ s|title }}</option>{% endfor %}
+          </select>
+        </div>
+        <div class="form-group"><label class="form-label">Visit Date</label><input type="date" class="form-control" name="visit_date"></div>
+        <div class="form-group"><label class="form-label">Registration Deadline</label><input type="datetime-local" class="form-control" name="registration_deadline"></div>
+        <div class="modal-footer" style="padding:0;margin-top:8px;border:none">
+          <button type="button" class="btn btn-secondary" data-modal-close>Cancel</button>
+          <button type="submit" class="btn btn-primary">Save</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+{% endblock %}

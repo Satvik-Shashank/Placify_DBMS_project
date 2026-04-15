@@ -1,0 +1,176 @@
+{% extends 'base.html' %}
+{% block title %}Rounds Management{% endblock %}
+{% block page_title %}Rounds Management{% endblock %}
+
+{% block topbar_actions %}
+<button class="btn btn-primary btn-sm" data-modal="addRoundModal">+ Create Round</button>
+<button class="btn btn-outline-primary btn-sm" data-modal="updateResultModal">Update Result</button>
+{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+  <h1 class="page-heading">Rounds Management</h1>
+  <p class="page-sub">Create recruitment rounds, update results, and bulk shortlist using stored procedures with cursors.</p>
+</div>
+
+<!-- Filter -->
+<form method="GET" class="filter-bar mb-4">
+  <select class="form-control form-select" name="company">
+    <option value="">All Companies</option>
+    {% for c in companies %}
+    <option value="{{ c.company_id }}" {{ 'selected' if comp_f==c.company_id|string }}>{{ c.name }}</option>
+    {% endfor %}
+  </select>
+  <button type="submit" class="btn btn-primary btn-sm">Filter</button>
+  <a href="{{ url_for('admin_rounds') }}" class="btn btn-secondary btn-sm">Reset</a>
+</form>
+
+{% if rounds %}
+<div style="display:flex;flex-direction:column;gap:14px">
+  {% for r in rounds %}
+  {% set rsc = {'scheduled':'badge-blue','ongoing':'badge-amber','completed':'badge-green','cancelled':'badge-red'} %}
+  <div class="card">
+    <div class="card-body" style="padding:16px 20px">
+      <div class="d-flex align-center justify-between flex-wrap gap-3">
+        <div class="d-flex align-center gap-3">
+          <div class="round-num">{{ r.round_number }}</div>
+          <div>
+            <div style="font-weight:600;font-size:14.5px">{{ r.round_name }}</div>
+            <div style="font-size:12.5px;color:var(--text-muted)">
+              {{ r.company_name }} &bull;
+              <span class="badge badge-gray" style="font-size:11px">{{ r.round_type|replace('_',' ')|title }}</span>
+              {% if r.scheduled_date %}
+              &bull; {{ r.scheduled_date | fmt_date }}
+              {% endif %}
+              {% if r.venue %}&bull; {{ r.venue }}{% endif %}
+            </div>
+          </div>
+        </div>
+        <div class="d-flex align-center gap-3">
+          <div style="text-align:center">
+            <div style="font-size:18px;font-weight:700;color:var(--gray-900)">{{ r.participants }}</div>
+            <div style="font-size:11px;color:var(--text-muted)">Participants</div>
+          </div>
+          <div style="text-align:center">
+            <div style="font-size:18px;font-weight:700;color:var(--green-600)">{{ r.shortlisted }}</div>
+            <div style="font-size:11px;color:var(--text-muted)">Shortlisted</div>
+          </div>
+          <span class="badge {{ rsc.get(r.round_status,'badge-gray') }}">{{ r.round_status|title }}</span>
+          <!-- Bulk shortlist -->
+          <form method="POST" action="{{ url_for('admin_bulk_shortlist', round_id=r.round_id) }}"
+            onsubmit="return confirm('Run bulk shortlist for Round {{ r.round_number }}?')">
+            <input type="hidden" name="min_score" value="60">
+            <button class="btn btn-outline-primary btn-sm">Bulk Shortlist (≥60)</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="card">
+  <div class="empty-state" style="padding:60px">
+    <svg xmlns="http://www.w3.org/2000/svg" width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
+    <h4>No rounds created</h4>
+    <p>Create a round to start shortlisting candidates.</p>
+  </div>
+</div>
+{% endif %}
+
+<!-- Create Round Modal -->
+<div class="modal-backdrop" id="addRoundModal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">Create Round</div>
+      <button class="modal-close" data-modal-close>×</button>
+    </div>
+    <div class="modal-body">
+      <form method="POST" action="{{ url_for('admin_add_round') }}">
+        <div class="form-group">
+          <label class="form-label">Company *</label>
+          <select class="form-control form-select" name="company_id" required>
+            <option value="">Select company...</option>
+            {% for c in companies %}<option value="{{ c.company_id }}">{{ c.name }}</option>{% endfor %}
+          </select>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label class="form-label">Round Number *</label><input type="number" class="form-control" name="round_number" min="1" required></div>
+          <div class="form-group">
+            <label class="form-label">Round Type *</label>
+            <select class="form-control form-select" name="round_type" required>
+              {% for t in ['aptitude','technical','coding','group_discussion','hr','other'] %}
+              <option value="{{ t }}">{{ t|replace('_',' ')|title }}</option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+        <div class="form-group"><label class="form-label">Round Name *</label><input class="form-control" name="round_name" placeholder="e.g. Aptitude Test Round 1" required></div>
+        <div class="form-row">
+          <div class="form-group"><label class="form-label">Scheduled Date</label><input type="datetime-local" class="form-control" name="scheduled_date"></div>
+          <div class="form-group"><label class="form-label">Duration (mins)</label><input type="number" class="form-control" name="duration_minutes" placeholder="90"></div>
+        </div>
+        <div class="form-group"><label class="form-label">Venue</label><input class="form-control" name="venue" placeholder="Hall / Room"></div>
+        <div class="form-group"><label class="form-label">Description</label><textarea class="form-control" name="description" rows="2"></textarea></div>
+        <div class="modal-footer" style="padding:0;margin-top:8px;border:none">
+          <button type="button" class="btn btn-secondary" data-modal-close>Cancel</button>
+          <button type="submit" class="btn btn-primary">Create Round</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Update Result Modal -->
+<div class="modal-backdrop" id="updateResultModal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">Update Round Result</div>
+      <button class="modal-close" data-modal-close>×</button>
+    </div>
+    <div class="modal-body">
+      <form method="POST" action="{{ url_for('admin_round_result') }}">
+        <div class="form-group">
+          <label class="form-label">Round *</label>
+          <select class="form-control form-select" name="round_id" required>
+            <option value="">Select round...</option>
+            {% for r in all_rounds %}<option value="{{ r.round_id }}">Round {{ r.round_number }}: {{ r.round_name }}</option>{% endfor %}
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Student Application *</label>
+          <select class="form-control form-select" name="application_id" required>
+            <option value="">Select student...</option>
+            {% for a in active_apps %}
+            <option value="{{ a.application_id }}">{{ a.student_name }} ({{ a.roll_number }}) — {{ a.company_name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Result *</label>
+            <select class="form-control form-select" name="status" required>
+              <option value="shortlisted">Shortlisted</option>
+              <option value="rejected">Rejected</option>
+              <option value="pending">Pending</option>
+              <option value="absent">Absent</option>
+            </select>
+          </div>
+          <div class="form-group"><label class="form-label">Score (0-100)</label><input type="number" step="0.01" class="form-control" name="score" min="0" max="100"></div>
+        </div>
+        <div class="form-group" style="display:flex;align-items:center;gap:8px">
+          <input type="checkbox" name="attended" id="attendedCheck" checked>
+          <label class="form-label" for="attendedCheck" style="margin:0;cursor:pointer">Student Attended</label>
+        </div>
+        <div class="form-group"><label class="form-label">Feedback</label><textarea class="form-control" name="feedback" rows="2"></textarea></div>
+        <div class="modal-footer" style="padding:0;margin-top:8px;border:none">
+          <button type="button" class="btn btn-secondary" data-modal-close>Cancel</button>
+          <button type="submit" class="btn btn-primary">Save Result</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+{% endblock %}

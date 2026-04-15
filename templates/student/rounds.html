@@ -1,0 +1,77 @@
+{% extends 'base.html' %}
+{% block title %}Round Progress{% endblock %}
+{% block page_title %}Round Progress{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+  <h1 class="page-heading">Round Progress</h1>
+  <p class="page-sub">Your performance across all recruitment rounds.</p>
+</div>
+
+{% if rounds %}
+  {# Group rounds by company #}
+  {% set companies_seen = [] %}
+  {% for r in rounds %}
+    {% if r.company_name not in companies_seen %}
+      {% set _ = companies_seen.append(r.company_name) %}
+    {% endif %}
+  {% endfor %}
+
+  {% for company in companies_seen %}
+  <div class="card mb-4">
+    <div class="card-header">
+      <div class="card-title">{{ company }}</div>
+    </div>
+    <div class="card-body">
+      <div style="display:flex;flex-direction:column;gap:12px">
+        {% for r in rounds if r.company_name == company %}
+        {% set pass = r.result_status == 'shortlisted' %}
+        {% set fail = r.result_status == 'rejected' %}
+        <div class="round-card">
+          <div class="round-num {{ 'pass' if pass else ('fail' if fail else '') }}">{{ r.round_number }}</div>
+          <div style="flex:1">
+            <div class="d-flex align-center justify-between">
+              <div>
+                <span style="font-weight:600;font-size:14px">{{ r.round_name }}</span>
+                <span class="badge badge-gray" style="margin-left:8px;font-size:11px">{{ r.round_type|replace('_',' ')|title }}</span>
+              </div>
+              <span class="badge {{ 'badge-green' if pass else ('badge-red' if fail else 'badge-gray') }}">
+                {{ r.result_status|replace('_',' ')|title if r.result_status else 'Pending' }}
+              </span>
+            </div>
+            <div class="d-flex gap-4 mt-2" style="font-size:12.5px;color:var(--text-muted)">
+              {% if r.scheduled_date %}
+              <span>📅 {{ r.scheduled_date | fmt_date }}</span>
+              {% endif %}
+              {% if r.score is not none %}
+              <span>Score: <b style="color:var(--gray-800)">{{ r.score }}/100</b></span>
+              {% endif %}
+              {% if r.attended is not none %}
+              <span>{{ '✓ Attended' if r.attended else '✗ Absent' }}</span>
+              {% endif %}
+            </div>
+            {% if r.feedback %}
+            <div style="margin-top:8px;padding:8px 10px;background:var(--gray-50);border-radius:6px;font-size:12.5px;color:var(--gray-600)">
+              <b>Feedback:</b> {{ r.feedback }}
+            </div>
+            {% endif %}
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+
+{% else %}
+<div class="card">
+  <div class="empty-state" style="padding:60px">
+    <svg xmlns="http://www.w3.org/2000/svg" width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+    <h4>No rounds yet</h4>
+    <p>Once you have active applications in rounds, your results will appear here.</p>
+  </div>
+</div>
+{% endif %}
+
+{% endblock %}
