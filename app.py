@@ -227,8 +227,8 @@ def register():
                 uid = user_res['lastrowid']
                 # Create basic student record
                 student_res = execute_query(
-                    """INSERT INTO students (user_id, roll_number, name, email, department, batch_year, cgpa, backlogs)
-                       VALUES (%s, %s, %s, %s, %s, YEAR(CURDATE()), 0.0, 0)""",
+                    """INSERT INTO students (user_id, roll_number, name, email, department, batch_year, cgpa, backlogs, phone, gender, dob)
+                       VALUES (%s, %s, %s, %s, %s, EXTRACT(YEAR FROM CURRENT_DATE)::INT, 0.0, 0, '0000000000', 'male', '2000-01-01')""",
                     (uid, roll_num, name, email, department), fetch=False
                 )
                 
@@ -267,7 +267,7 @@ def student_dashboard():
 
     drives_q = execute_query(
         """SELECT c.company_id, c.name, c.job_role, c.ctc_lpa, c.visit_date, c.is_dream,
-                  e.min_cgpa, DATEDIFF(c.registration_deadline, NOW()) AS days_left
+                  e.min_cgpa, EXTRACT(DAY FROM (c.registration_deadline - NOW()))::INT AS days_left
            FROM companies c JOIN eligibility_criteria e ON c.company_id = e.company_id
            WHERE c.status = 'upcoming' AND c.registration_deadline > NOW()
            ORDER BY c.visit_date ASC LIMIT 5"""
@@ -326,7 +326,7 @@ def student_profile():
             proficiency = request.form.get('proficiency')
             if skill_id and proficiency:
                 r = execute_query(
-                    "INSERT IGNORE INTO student_skills (student_id, skill_id, proficiency) VALUES (%s,%s,%s)",
+                    "INSERT INTO student_skills (student_id, skill_id, proficiency) VALUES (%s,%s,%s) ON CONFLICT (student_id, skill_id) DO NOTHING",
                     (sid, skill_id, proficiency), fetch=False
                 )
                 flash('Skill added.' if r['success'] else 'Skill already exists.', 'success' if r['success'] else 'warning')
