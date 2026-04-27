@@ -19,19 +19,38 @@ config = get_config()
 # CONNECTION POOL
 # =============================================================================
 
-try:
-    # Build DSN from config
-    dsn = f"host={config.MYSQL_HOST} port={config.MYSQL_PORT} dbname={config.MYSQL_DATABASE} user={config.MYSQL_USER} password={config.MYSQL_PASSWORD} sslmode=require"
-    
-    connection_pool = pool.SimpleConnectionPool(
-        minconn=1,
-        maxconn=config.MYSQL_POOL_SIZE,
-        dsn=dsn
-    )
-    logger.info(f"✓ Database pool created: {config.MYSQL_DATABASE} ({config.MYSQL_POOL_SIZE} connections)")
-except Exception as e:
-    logger.error(f"✗ Error creating connection pool: {e}")
-    connection_pool = None
+# Lazy pool — created on first request, not at import time
+_connection_pool = None
+
+def _get_pool():
+    global _connection_pool
+    if _connection_pool is not None:
+        return _connection_pool
+    try:
+        host = config.MYSQL_HOST or 'localhost'
+        port = int(config.MYSQL_PORT or 5432)
+        dbname = config.MYSQL_DATABASE or 'postgres'
+        user = config.MYSQL_USER or 'postgres'
+        password = config.MYSQL_PASSWORD or ''
+        pool_size = int(getattr(config, 'MYSQL_POOL_SIZE', 3))
+
+        # Try with SSL first (required for Supabase), fall back without
+        try:
+            dsn = f"host={host} port={port} dbname={dbname} user={user} password={password} sslmode=require connect_timeout=10"
+            _connection_pool = pool.SimpleConnectionPool(minconn=1, maxconn=pool_size, dsn=dsn)
+        except Exception:
+            dsn = f"host={host} port={port} dbname={dbname} user={user} password={password} connect_timeout=10"
+            _connection_pool = pool.SimpleConnectionPool(minconn=1, maxconn=pool_size, dsn=dsn)
+
+        logger.info(f"✓ Pool created: {dbname}@{host}:{port}")
+    except Exception as e:
+        logger.error(f"✗ Pool creation failed: {e}")
+        _connection_pool = None
+    return _connection_pool
+
+# Keep backward-compat alias
+def _pool_getter():
+    return _get_pool()
 
 
 # =============================================================================
@@ -41,17 +60,20 @@ except Exception as e:
 @contextmanager
 def get_connection():
     connection = None
+    p = _get_pool()
     try:
-        if connection_pool is None:
-            raise Exception("Connection pool not initialized")
-        connection = connection_pool.getconn()
+        if p is None:
+            raise Exception("Database connection pool unavailable. Check environment variables.")
+        connection = p.getconn()
         yield connection
     except Exception as e:
         logger.error(f"Database connection error: {e}")
         raise
     finally:
         if connection:
-            connection_pool.putconn(connection)
+            p = _get_pool()
+            if p:
+                p.putconn(connection)
 
 
 @contextmanager

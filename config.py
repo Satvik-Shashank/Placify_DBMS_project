@@ -32,7 +32,7 @@ class Config:
     # =============================================================================
     
     MYSQL_HOST = os.environ.get('MYSQL_HOST') or 'localhost'
-    MYSQL_PORT = int(os.environ.get('MYSQL_PORT') or 3306)
+    MYSQL_PORT = int(os.environ.get('MYSQL_PORT') or 5432)
     MYSQL_USER = os.environ.get('MYSQL_USER') or 'root'
     MYSQL_PASSWORD = os.environ.get('MYSQL_PASSWORD') or ''
     MYSQL_DATABASE = os.environ.get('MYSQL_DATABASE') or 'campus_placement'
@@ -93,22 +93,22 @@ class ProductionConfig(Config):
     # Stricter CORS in production
     CORS_ORIGINS = os.environ.get('CORS_ORIGINS', '').split(',')
     
-    # Production database (use individual env vars OR DATABASE_URL)
+    # Production database — supports postgresql://, postgres://, or individual env vars
     DATABASE_URL = os.environ.get('DATABASE_URL', '')
-    if DATABASE_URL and DATABASE_URL.startswith('mysql'):
+    if DATABASE_URL and (DATABASE_URL.startswith('postgresql') or DATABASE_URL.startswith('postgres')):
         from urllib.parse import urlparse as _urlparse
         _parsed = _urlparse(DATABASE_URL)
         MYSQL_HOST = _parsed.hostname
-        MYSQL_PORT = _parsed.port or 3306
+        MYSQL_PORT = _parsed.port or 5432
         MYSQL_USER = _parsed.username
         MYSQL_PASSWORD = _parsed.password
-        MYSQL_DATABASE = (_parsed.path or '/campus_placement').lstrip('/')
+        MYSQL_DATABASE = (_parsed.path or '/postgres').lstrip('/')
     else:
         MYSQL_HOST = os.environ.get('MYSQL_HOST') or 'localhost'
-        MYSQL_PORT = int(os.environ.get('MYSQL_PORT') or 3306)
-        MYSQL_USER = os.environ.get('MYSQL_USER') or 'root'
+        MYSQL_PORT = int(os.environ.get('MYSQL_PORT') or 5432)
+        MYSQL_USER = os.environ.get('MYSQL_USER') or 'postgres'
         MYSQL_PASSWORD = os.environ.get('MYSQL_PASSWORD') or ''
-        MYSQL_DATABASE = os.environ.get('MYSQL_DATABASE') or 'campus_placement'
+        MYSQL_DATABASE = os.environ.get('MYSQL_DATABASE') or 'postgres'
     
     # Larger pool for production
     MYSQL_POOL_SIZE = int(os.environ.get('MYSQL_POOL_SIZE') or 5)
