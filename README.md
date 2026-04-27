@@ -17,7 +17,7 @@
 
 ---
 
-## 📋 Overview
+## Overview
 
 Placify is a **comprehensive campus placement management system** built as a DBMS course project. It models the entire campus recruitment lifecycle — from student registration and company drive management to multi-round interviews, offer processing, and analytics — while demonstrating **20+ advanced SQL/DBMS concepts** in a production-grade web application.
 
@@ -25,9 +25,9 @@ The system features **three distinct portals** (Student, Company/HR, and Admin),
 
 ---
 
-## ✨ Features
+## Features
 
-### 🎓 Student Portal
+### Student Portal
 | Feature | Description |
 |---------|-------------|
 | **Dashboard** | Personalized stats — applications, selections, offers, best package |
@@ -37,7 +37,7 @@ The system features **three distinct portals** (Student, Company/HR, and Admin),
 | **Offer Management** | Accept/decline offers with ACID-compliant transaction processing |
 | **Profile & Skills** | Academic profile, resume upload, and verified skill management |
 
-### 🏢 Company / HR Portal
+### Company / HR Portal
 | Feature | Description |
 |---------|-------------|
 | **Recruiter Dashboard** | At-a-glance hiring funnel — applicants, shortlisted, selected, offers |
@@ -49,7 +49,7 @@ The system features **three distinct portals** (Student, Company/HR, and Admin),
 | **Hiring Analytics** | Funnel visualization, selection ratios, and package statistics |
 | **Communications** | Automated notification system for interviews and offers |
 
-### 🛡️ Admin Portal
+### Admin Portal
 | Feature | Description |
 |---------|-------------|
 | **Global Dashboard** | Institution-wide placement statistics and KPIs |
@@ -60,7 +60,7 @@ The system features **three distinct portals** (Student, Company/HR, and Admin),
 
 ---
 
-## 🏗️ Architecture
+## Architecture
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
@@ -89,7 +89,7 @@ The system features **three distinct portals** (Student, Company/HR, and Admin),
 
 ---
 
-## 📊 DBMS Concepts Demonstrated
+## DBMS Concepts Demonstrated
 
 > This project was designed to comprehensively cover the DBMS syllabus. Each concept is implemented in production context, not as an isolated example.
 
@@ -139,7 +139,7 @@ The system features **three distinct portals** (Student, Company/HR, and Admin),
 
 ---
 
-## 🚀 Installation & Setup
+## Installation & Setup
 
 ### Prerequisites
 
@@ -198,7 +198,7 @@ Open **[http://localhost:5000](http://localhost:5000)** in your browser.
 
 ---
 
-## 🔐 Demo Credentials
+## Demo Credentials
 
 | Portal | Email | Password | Description |
 |--------|-------|----------|-------------|
@@ -210,7 +210,7 @@ Open **[http://localhost:5000](http://localhost:5000)** in your browser.
 
 ---
 
-## 📁 Project Structure
+## Project Structure
 
 ```
 Placify_DBMS_project/
@@ -271,7 +271,7 @@ Placify_DBMS_project/
 
 ---
 
-## 🛠️ Tech Stack
+## Tech Stack
 
 | Layer | Technology | Purpose |
 |-------|-----------|---------|
@@ -285,7 +285,7 @@ Placify_DBMS_project/
 
 ---
 
-## 📈 Database Schema (ER Summary)
+## Database Schema (ER Summary)
 
 ```
 ┌──────────┐     ┌──────────────┐     ┌──────────────┐
@@ -323,7 +323,7 @@ Placify_DBMS_project/
 
 ---
 
-## 👥 Contributors
+## Contributors
 
 <table>
   <tr>
@@ -339,7 +339,7 @@ Placify_DBMS_project/
 
 ---
 
-## 📄 License
+## License
 
 This project is built for academic purposes as part of a **Database Management Systems (DBMS)** course project.
 
@@ -347,6 +347,6 @@ This project is built for academic purposes as part of a **Database Management S
 
 <div align="center">
 
-**Built with ❤️ using Flask, MySQL & vanilla CSS**
+**Built with Flask, MySQL & vanilla CSS**
 
 </div>
