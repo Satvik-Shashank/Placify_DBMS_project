@@ -1,19 +1,34 @@
 <div align="center">
 
-<img src="static/assets/logo.png" alt="Placify Logo" width="200"/>
+<img src="static/assets/logo.png" alt="Placify Logo" width="180"/>
 
-# Placify — Campus Placement Management System
+# Placify — Campus Placement Management Portal
 
-**A full-stack DBMS project demonstrating advanced SQL concepts through a real-world campus placement portal.**
+**A production-deployed, full-stack DBMS project demonstrating advanced SQL concepts through a real-world campus placement portal.**
 
-[![Python](https://img.shields.io/badge/Python-3.10+-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://python.org)
+[![Live Demo](https://img.shields.io/badge/Live%20Demo-Vercel-000000?style=for-the-badge&logo=vercel&logoColor=white)](https://placify-campus-placement-management.vercel.app/login)
+[![Python](https://img.shields.io/badge/Python-3.11-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://python.org)
 [![Flask](https://img.shields.io/badge/Flask-3.0-000000?style=for-the-badge&logo=flask&logoColor=white)](https://flask.palletsprojects.com)
-[![MySQL](https://img.shields.io/badge/MySQL-8.0-4479A1?style=for-the-badge&logo=mysql&logoColor=white)](https://mysql.com)
-[![License](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)](LICENSE)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Supabase-4479A1?style=for-the-badge&logo=supabase&logoColor=white)](https://supabase.com)
+[![License](https://img.shields.io/badge/License-MIT-22C55E?style=for-the-badge)](LICENSE)
 
-[Live Demo](#-quick-start) · [Features](#-features) · [Architecture](#-architecture) · [SQL Concepts](#-dbms-concepts-demonstrated) · [Setup Guide](#-installation--setup)
+[🌐 Live Site](https://placify-campus-placement-management.vercel.app/login) · [✨ Features](#-features) · [🏗 Architecture](#-architecture) · [📐 DBMS Concepts](#-dbms-concepts-demonstrated) · [⚡ Quick Start](#-quick-start)
 
 </div>
+
+---
+
+## 🌐 Live Deployment
+
+> **The application is live and publicly accessible:**
+>
+> **[https://placify-campus-placement-management.vercel.app/login](https://placify-campus-placement-management.vercel.app/login)**
+
+| Service | Provider | Purpose |
+|---------|----------|---------|
+| **Hosting** | Vercel (Serverless) | Flask app runtime (Python 3.11) |
+| **Database** | Supabase (PostgreSQL) | Cloud-hosted relational database |
+| **Static Assets** | Vercel CDN | CSS, JS, images |
 
 ---
 
@@ -25,9 +40,9 @@ The system features **three distinct portals** (Student, Company/HR, and Admin),
 
 ---
 
-## Features
+## ✨ Features
 
-### Student Portal
+### 🎓 Student Portal
 | Feature | Description |
 |---------|-------------|
 | **Dashboard** | Personalized stats — applications, selections, offers, best package |
@@ -37,7 +52,7 @@ The system features **three distinct portals** (Student, Company/HR, and Admin),
 | **Offer Management** | Accept/decline offers with ACID-compliant transaction processing |
 | **Profile & Skills** | Academic profile, resume upload, and verified skill management |
 
-### Company / HR Portal
+### 🏢 Company / HR Portal
 | Feature | Description |
 |---------|-------------|
 | **Recruiter Dashboard** | At-a-glance hiring funnel — applicants, shortlisted, selected, offers |
@@ -49,7 +64,7 @@ The system features **three distinct portals** (Student, Company/HR, and Admin),
 | **Hiring Analytics** | Funnel visualization, selection ratios, and package statistics |
 | **Communications** | Automated notification system for interviews and offers |
 
-### Admin Portal
+### 🛡 Admin Portal
 | Feature | Description |
 |---------|-------------|
 | **Global Dashboard** | Institution-wide placement statistics and KPIs |
@@ -60,98 +75,97 @@ The system features **three distinct portals** (Student, Company/HR, and Admin),
 
 ---
 
-## Architecture
+## 🏗 Architecture
 
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│                        PLACIFY SYSTEM                           │
-├─────────────┬───────────────────┬───────────────────────────────┤
-│  FRONTEND   │    BACKEND API    │         DATABASE              │
-│             │                   │                               │
-│  Jinja2     │    Flask 3.0      │    MySQL 8.0                  │
-│  Templates  │    Python 3.10+   │                               │
-│             │                   │    ┌───────────────────┐      │
-│  ┌────────┐ │  ┌─────────────┐  │    │ Tables (11)       │      │
-│  │Student │◄├──┤ app.py      │──├───►│ Views  (8)        │      │
-│  │Portal  │ │  │ (1200+ LOC) │  │    │ Procedures (5)    │      │
-│  ├────────┤ │  ├─────────────┤  │    │ Functions (4)     │      │
-│  │Company │◄├──┤ db.py       │──├───►│ Triggers (6)      │      │
-│  │Portal  │ │  │ (Pool Mgmt) │  │    │ Constraints (FK)  │      │
-│  ├────────┤ │  ├─────────────┤  │    └───────────────────┘      │
-│  │Admin   │◄├──┤ config.py   │  │                               │
-│  │Portal  │ │  └─────────────┘  │    Connection Pooling (5)     │
-│  └────────┘ │                   │    Parameterized Queries      │
-│             │  Role-Based Auth  │    ACID Transactions          │
-│  Chart.js   │  Session Mgmt    │    Audit Logging              │
-│  Inter Font │  CSRF Protection  │    Stored Programs            │
-└─────────────┴───────────────────┴───────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────────┐
+│                          PLACIFY SYSTEM                             │
+├──────────────────┬───────────────────┬──────────────────────────────┤
+│    FRONTEND      │    BACKEND API    │         DATABASE             │
+│                  │                   │                              │
+│  Jinja2          │  Flask 3.0        │  Supabase (PostgreSQL 15)    │
+│  Templates       │  Python 3.11      │                              │
+│                  │                   │  ┌────────────────────────┐  │
+│  ┌───────────┐   │  ┌─────────────┐  │  │  Tables      (11)      │  │
+│  │  Student  │◄──┤  │   app.py    │──┼─►│  Views        (8)      │  │
+│  │  Portal   │   │  │ (1200+ LOC) │  │  │  Functions    (4)      │  │
+│  ├───────────┤   │  ├─────────────┤  │  │  Triggers     (6)      │  │
+│  │  Company  │◄──┤  │    db.py    │──┼─►│  Procedures   (5)      │  │
+│  │  Portal   │   │  │ (Pool Mgmt) │  │  │  Constraints  (FK/CH)  │  │
+│  ├───────────┤   │  ├─────────────┤  │  └────────────────────────┘  │
+│  │   Admin   │◄──┤  │  config.py  │  │                              │
+│  │  Portal   │   │  └─────────────┘  │  psycopg2 Connection Pool    │
+│  └───────────┘   │                   │  Parameterized Queries       │
+│                  │  Role-Based Auth  │  ACID Transactions           │
+│  Chart.js        │  Session Mgmt     │  Audit Logging               │
+│  Inter Font      │  CSRF Protection  │  Stored Programs             │
+└──────────────────┴───────────────────┴──────────────────────────────┘
+
+    Deployed on Vercel (Serverless)   ←→   Supabase (Cloud PostgreSQL)
 ```
 
 ---
 
-## DBMS Concepts Demonstrated
+## 📐 DBMS Concepts Demonstrated
 
-> This project was designed to comprehensively cover the DBMS syllabus. Each concept is implemented in production context, not as an isolated example.
+> This project was designed to comprehensively cover the DBMS syllabus. Each concept is implemented in a production context, not as an isolated example.
 
 ### Core Database Design
 | Concept | Implementation | File |
 |---------|---------------|------|
-| **ER Modeling → Relational Schema** | 11 normalized tables with proper relationships | [`schema.sql`](schema.sql) |
-| **Normalization (3NF)** | Decomposed tables: `students`, `skills`, `student_skills` | [`schema.sql`](schema.sql) |
-| **Foreign Keys & Referential Integrity** | `ON DELETE CASCADE`, `ON UPDATE CASCADE` constraints | [`schema.sql`](schema.sql) |
-| **CHECK Constraints** | CGPA range, status enums, batch year validation | [`schema.sql`](schema.sql) |
-| **UNIQUE & Composite Keys** | `(student_id, company_id)` in applications | [`schema.sql`](schema.sql) |
+| **ER Modeling → Relational Schema** | 11 normalized tables with proper relationships | [`supabase/01_schema.sql`](supabase/01_schema.sql) |
+| **Normalization (3NF)** | Decomposed tables: `students`, `skills`, `student_skills` | [`supabase/01_schema.sql`](supabase/01_schema.sql) |
+| **Foreign Keys & Referential Integrity** | `ON DELETE CASCADE`, `ON UPDATE CASCADE` constraints | [`supabase/01_schema.sql`](supabase/01_schema.sql) |
+| **CHECK Constraints** | CGPA range, status enums, batch year validation | [`supabase/01_schema.sql`](supabase/01_schema.sql) |
+| **UNIQUE & Composite Keys** | `(student_id, company_id)` in applications | [`supabase/01_schema.sql`](supabase/01_schema.sql) |
 
 ### Stored Programs
 | Concept | Implementation | File |
 |---------|---------------|------|
-| **Stored Procedures** | `sp_apply_for_company`, `sp_create_offer`, `sp_accept_offer` | [`procedures.sql`](procedures.sql) |
-| **Stored Functions** | `fn_get_student_highest_package`, `fn_get_placement_rank` | [`functions.sql`](functions.sql) |
-| **Cursors** | `sp_get_eligible_companies` with cursor-based iteration | [`procedures.sql`](procedures.sql) |
-| **Exception Handling** | `DECLARE HANDLER` for duplicate/constraint violations | [`procedures.sql`](procedures.sql) |
-| **OUT Parameters** | Procedures returning status codes and messages | [`procedures.sql`](procedures.sql) |
+| **Stored Procedures** | `sp_apply_for_company`, `sp_create_offer`, `sp_accept_offer` | [`supabase/02_functions.sql`](supabase/02_functions.sql) |
+| **Stored Functions** | `fn_get_student_highest_package`, `fn_get_placement_rank` | [`supabase/02_functions.sql`](supabase/02_functions.sql) |
+| **Exception Handling** | `EXCEPTION WHEN` blocks for constraint violations | [`supabase/02_functions.sql`](supabase/02_functions.sql) |
+| **OUT Parameters** | Functions returning status codes and messages | [`supabase/02_functions.sql`](supabase/02_functions.sql) |
 
 ### Views & Aggregation
 | Concept | Implementation | File |
 |---------|---------------|------|
-| **Complex Views** | 8 analytics views with multi-table JOINs | [`views.sql`](views.sql) |
-| **Aggregate Functions** | `COUNT`, `AVG`, `MAX`, `MIN`, `SUM` across dashboards | [`views.sql`](views.sql) |
-| **GROUP BY + HAVING** | Department-wise stats with minimum thresholds | [`views.sql`](views.sql) |
-| **Subqueries** | Correlated subqueries in `fn_get_placement_rank` | [`functions.sql`](functions.sql) |
-| **CASE Expressions** | Dynamic status categorization in views | [`views.sql`](views.sql) |
+| **Complex Views** | 8 analytics views with multi-table JOINs | [`supabase/03_views.sql`](supabase/03_views.sql) |
+| **Aggregate Functions** | `COUNT`, `AVG`, `MAX`, `MIN`, `SUM` across dashboards | [`supabase/03_views.sql`](supabase/03_views.sql) |
+| **GROUP BY + HAVING** | Department-wise stats with minimum thresholds | [`supabase/03_views.sql`](supabase/03_views.sql) |
+| **Subqueries** | Correlated subqueries in rank functions | [`supabase/02_functions.sql`](supabase/02_functions.sql) |
+| **CASE Expressions** | Dynamic status categorization in views | [`supabase/03_views.sql`](supabase/03_views.sql) |
 
 ### Triggers & Transactions
 | Concept | Implementation | File |
 |---------|---------------|------|
-| **AFTER INSERT Triggers** | Auto audit logging on `applications`, `offers` | [`triggers.sql`](triggers.sql) |
-| **AFTER UPDATE Triggers** | Track status changes with JSON diff logging | [`triggers.sql`](triggers.sql) |
-| **BEFORE INSERT Triggers** | Duplicate application prevention | [`triggers.sql`](triggers.sql) |
-| **ACID Transactions** | Offer acceptance with atomic status updates | [`procedures.sql`](procedures.sql) |
+| **AFTER INSERT Triggers** | Auto audit logging on `applications`, `offers` | [`supabase/04_triggers.sql`](supabase/04_triggers.sql) |
+| **AFTER UPDATE Triggers** | Track status changes with diff logging | [`supabase/04_triggers.sql`](supabase/04_triggers.sql) |
+| **BEFORE INSERT Triggers** | Duplicate application prevention | [`supabase/04_triggers.sql`](supabase/04_triggers.sql) |
+| **ACID Transactions** | Offer acceptance with atomic status updates | [`supabase/02_functions.sql`](supabase/02_functions.sql) |
 
 ### Advanced Patterns
 | Concept | Implementation | File |
 |---------|---------------|------|
-| **Connection Pooling** | 5-connection MySQL pool with auto-reconnect | [`db.py`](db.py) |
+| **Connection Pooling** | psycopg2 lazy pool with serverless-safe init | [`db.py`](db.py) |
 | **Parameterized Queries** | All queries use `%s` placeholders (SQL injection prevention) | [`db.py`](db.py) |
-| **JSON Storage** | `eligibility_criteria.allowed_departments` as JSON array | [`schema.sql`](schema.sql) |
-| **Decimal Precision** | `DECIMAL(10,2)` for all financial fields (CTC, packages) | [`schema.sql`](schema.sql) |
-| **Audit Trail** | Complete mutation history via trigger → `audit_logs` table | [`triggers.sql`](triggers.sql) |
+| **Audit Trail** | Complete mutation history via trigger → `audit_logs` table | [`supabase/04_triggers.sql`](supabase/04_triggers.sql) |
 
 ---
 
-## Installation & Setup
+## ⚡ Quick Start
 
 ### Prerequisites
 
-- **Python** 3.10+
-- **MySQL** 8.0+
-- **pip** (Python package manager)
+- **Python** 3.11+
+- **pip**
+- A [Supabase](https://supabase.com) project (or local PostgreSQL)
 
 ### 1. Clone the repository
 
 ```bash
-git clone https://github.com/Satvik-Shashank/Placify_DBMS_project.git
-cd Placify_DBMS_project
+git clone https://github.com/Satvik-Shashank/Placify_Campus-placement-management-portal_FINAL.git
+cd Placify_Campus-placement-management-portal_FINAL
 ```
 
 ### 2. Install dependencies
@@ -160,33 +174,40 @@ cd Placify_DBMS_project
 pip install -r requirements.txt
 ```
 
-### 3. Configure your database
+### 3. Configure environment
 
 ```bash
 cp .env.example .env
 ```
 
-Edit `.env` and set your MySQL credentials:
+Edit `.env` with your Supabase credentials:
 
 ```env
-MYSQL_HOST=localhost
-MYSQL_PORT=3306
-MYSQL_USER=root
-MYSQL_PASSWORD=your_password_here
-MYSQL_DATABASE=campus_placement
+MYSQL_HOST=db.<your-project-ref>.supabase.co
+MYSQL_PORT=5432
+MYSQL_USER=postgres
+MYSQL_PASSWORD=your_supabase_db_password
+MYSQL_DATABASE=postgres
+SECRET_KEY=your_secret_key_here
+FLASK_ENV=development
 ```
 
-### 4. Initialize the database & seed data
+### 4. Set up the database
 
-```bash
-python setup_db.py
+Run the SQL scripts in order in the **Supabase SQL Editor** (or any PostgreSQL client):
+
+```
+supabase/01_schema.sql      ← Tables, constraints, indexes
+supabase/02_functions.sql   ← Stored functions & procedures
+supabase/03_views.sql       ← Analytics views
+supabase/04_triggers.sql    ← Audit triggers
+supabase/05_seed.sql        ← Sample data
 ```
 
-This will automatically:
-- Create the `campus_placement` database
-- Execute `schema.sql` (tables & constraints)
-- Execute `views.sql`, `procedures.sql`, `functions.sql`, `triggers.sql`
-- Seed sample companies, students, and eligibility criteria
+> **Note:** Before running `05_seed.sql`, generate password hashes with:
+> ```bash
+> python supabase/generate_hashes.py
+> ```
 
 ### 5. Run the application
 
@@ -198,107 +219,84 @@ Open **[http://localhost:5000](http://localhost:5000)** in your browser.
 
 ---
 
-## Demo Credentials
+## 🔑 Demo Credentials
 
 | Portal | Email | Password | Description |
 |--------|-------|----------|-------------|
-| **Admin** | `admin@placify.com` | `admin123` | Full system access |
-| **Company (Microsoft)** | `microsoft@placify.com` | `microsoft123` | HR recruiter view |
-| **Student (Satvik)** | `student@placify.com` | `student123` | Placed student with offers |
-| **Student (Arjun)** | `cs_arjun@placify.com` | `student123` | Mid-tier with pending offers |
-| **Student (Sneha)** | `it_sneha@placify.com` | `student123` | Active applications |
+| **Admin** | `admin@placify.edu` | `Admin@123` | Full system access |
+| **Company** | `microsoft@placify.com` | `microsoft123` | HR recruiter view |
+| **Student** | `student@placify.com` | `student123` | Placed student with offers |
 
 ---
 
-## Project Structure
+## 📁 Project Structure
 
 ```
-Placify_DBMS_project/
+Placify/
 │
-├── app.py                    # Flask routes — all 3 portals (1200+ lines)
-├── db.py                     # MySQL connection pool + query helpers
-├── config.py                 # Environment configuration loader
-├── setup_db.py               # One-shot database setup & seed script
-├── seed_more_data.py         # Additional realistic demo data
-├── requirements.txt          # Python dependencies
-├── .env.example              # Environment template
+├── app.py                      # Flask routes — all 3 portals (1200+ lines)
+├── db.py                       # PostgreSQL connection pool + query helpers
+├── config.py                   # Environment configuration loader
+├── requirements.txt            # Python dependencies
+├── vercel.json                 # Vercel deployment config (Python 3.11 + static)
+├── .env.example                # Environment template
+├── LICENSE                     # MIT License
 │
-├── sql/                      # SQL source files
-│   └── sample_data.sql       # Seed data (companies, eligibility)
+├── supabase/                   # PostgreSQL/Supabase SQL scripts
+│   ├── 01_schema.sql           # Tables, constraints, indexes
+│   ├── 02_functions.sql        # Stored functions & procedures
+│   ├── 03_views.sql            # 8 analytics views
+│   ├── 04_triggers.sql         # 6 audit triggers
+│   ├── 05_seed.sql             # Sample data
+│   └── generate_hashes.py      # Password hash generator for seeding
 │
-├── schema.sql                # Tables, constraints, indexes
-├── views.sql                 # 8 analytics views
-├── procedures.sql            # 5 stored procedures
-├── functions.sql             # 4 stored functions
-├── triggers.sql              # 6 database triggers
-│
-├── templates/                # Jinja2 HTML templates
-│   ├── base.html             # Shared layout (sidebar + topbar)
+├── templates/                  # Jinja2 HTML templates
+│   ├── base.html               # Shared layout (sidebar + topbar)
 │   ├── auth/
-│   │   └── login.html        # Authentication page
-│   ├── components/           # Reusable sidebar partials
-│   │   ├── sidebar_admin.html
-│   │   ├── sidebar_company.html
-│   │   └── sidebar_student.html
-│   ├── student/              # Student portal (6 pages)
-│   │   ├── dashboard.html
-│   │   ├── profile.html
-│   │   ├── companies.html
-│   │   ├── applications.html
-│   │   ├── rounds.html
-│   │   └── offers.html
-│   ├── company/              # Company portal (9 pages)
-│   │   ├── dashboard.html
-│   │   ├── analytics.html
-│   │   ├── pipeline.html
-│   │   ├── rounds.html
-│   │   ├── shortlisting.html
-│   │   ├── offers.html
-│   │   ├── drive.html
-│   │   ├── applicant_review.html
-│   │   └── communications.html
-│   └── admin/                # Admin portal pages
+│   │   └── login.html
+│   ├── components/             # Reusable sidebar partials
+│   ├── student/                # Student portal (6 pages)
+│   ├── company/                # Company portal (9 pages)
+│   └── admin/                  # Admin portal pages
 │
-├── static/
-│   ├── css/
-│   │   └── main.css          # Complete design system (950+ lines)
-│   ├── js/
-│   │   └── main.js           # UI interactions & sidebar logic
-│   └── assets/               # Logo, favicon, images
-│
-└── uploads/                  # Resume uploads (auto-created)
+└── static/
+    ├── css/main.css            # Design system (950+ lines)
+    ├── js/main.js              # UI interactions & sidebar logic
+    └── assets/                 # Logo, favicon, images
 ```
 
 ---
 
-## Tech Stack
+## 🛠 Tech Stack
 
 | Layer | Technology | Purpose |
 |-------|-----------|---------|
-| **Backend** | Flask 3.0, Python 3.10+ | API routing, session management, template rendering |
-| **Database** | MySQL 8.0 | Relational data storage, stored programs, triggers |
+| **Backend** | Flask 3.0, Python 3.11 | API routing, session management, template rendering |
+| **Database** | PostgreSQL 15 (Supabase) | Relational data, stored programs, triggers, views |
+| **ORM/Driver** | psycopg2-binary 2.9.10 | PostgreSQL adapter with connection pooling |
 | **Frontend** | Jinja2, HTML5, CSS3 | Server-side templating with responsive design |
-| **Styling** | Custom CSS Design System | Inter font, blue theme, 950+ lines of utility classes |
+| **Styling** | Custom CSS Design System | Inter font, 950+ lines of utilities |
 | **Charts** | Chart.js | Hiring funnel and analytics visualizations |
 | **Auth** | Werkzeug + Flask Sessions | Password hashing (pbkdf2:sha256), role-based access |
-| **DB Pool** | mysql-connector-python | Connection pooling with 5 reusable connections |
+| **Hosting** | Vercel (Serverless) | Auto-deployed from GitHub `main` branch |
+| **DB Cloud** | Supabase | Managed PostgreSQL with connection pooling |
 
 ---
 
-## Database Schema (ER Summary)
+## 🗄 Database Schema
 
 ```
-┌──────────┐     ┌──────────────┐     ┌──────────────┐
+┌──────────┐     ┌──────────────┐     ┌───────────────┐
 │  users   │────►│   students   │────►│ student_skills│
-│          │     │              │     │              │
-│ user_id  │     │ student_id   │     │ skill_id  ──►│──► skills
-│ email    │     │ name, cgpa   │     │ proficiency  │
-│ role     │     │ department   │     └──────────────┘
+│          │     │              │     │               │
+│ user_id  │     │ student_id   │     │ skill_id ────►│──► skills
+│ email    │     │ name, cgpa   │     │ proficiency   │
+│ role     │     │ department   │     └───────────────┘
 └──────────┘     │ is_placed    │
                  └──────┬───────┘
                         │
                  ┌──────▼───────┐     ┌──────────────┐
-                 │ applications │────►│    offers     │
+                 │ applications │────►│    offers    │
                  │              │     │              │
                  │ company_id ──│──►  │ offered_ctc  │
                  │ status       │     │ status       │
@@ -323,7 +321,7 @@ Placify_DBMS_project/
 
 ---
 
-## Contributors
+## 👤 Contributors
 
 <table>
   <tr>
@@ -339,14 +337,16 @@ Placify_DBMS_project/
 
 ---
 
-## License
+## 📄 License
 
-This project is built for academic purposes as part of a **Database Management Systems (DBMS)** course project.
+This project is licensed under the **MIT License** — see the [LICENSE](LICENSE) file for details.
 
 ---
 
 <div align="center">
 
-**Built with Flask, MySQL & vanilla CSS**
+**Built with Flask · PostgreSQL · Supabase · Vercel**
+
+[![Live Demo](https://img.shields.io/badge/Try%20It%20Live-placify--campus--placement--management.vercel.app-000000?style=for-the-badge&logo=vercel)](https://placify-campus-placement-management.vercel.app/login)
 
 </div>
