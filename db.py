@@ -22,6 +22,25 @@ config = get_config()
 # Lazy pool — created on first request, not at import time
 _connection_pool = None
 
+def _resolve_ipv4(hostname: str) -> str:
+    """
+    Resolve hostname to an IPv4 address.
+    Vercel serverless functions cannot make outbound IPv6 connections,
+    but Supabase's direct DB hostname often resolves to IPv6.
+    Forcing AF_INET ensures we always get an IPv4 address.
+    """
+    import socket
+    try:
+        results = socket.getaddrinfo(hostname, None, socket.AF_INET, socket.SOCK_STREAM)
+        if results:
+            ipv4 = results[0][4][0]
+            logger.info(f"✓ Resolved {hostname} → {ipv4} (IPv4 forced)")
+            return ipv4
+    except Exception as e:
+        logger.warning(f"IPv4 resolution failed for {hostname}: {e}, using hostname as-is")
+    return hostname
+
+
 def _get_pool():
     global _connection_pool
     if _connection_pool is not None:
@@ -34,15 +53,24 @@ def _get_pool():
         password = config.MYSQL_PASSWORD or ''
         pool_size = int(getattr(config, 'MYSQL_POOL_SIZE', 3))
 
+        # ── CRITICAL FIX: Vercel blocks outbound IPv6. ──────────────────────
+        # Supabase direct DB hostnames (db.*.supabase.co) resolve to IPv6.
+        # Force IPv4 resolution so the connection always succeeds on Vercel.
+        # For the connection pooler host (*.pooler.supabase.com) this is a no-op.
+        connect_host = _resolve_ipv4(host)
+
         # Try with SSL first (required for Supabase), fall back without
         try:
-            dsn = f"host={host} port={port} dbname={dbname} user={user} password={password} sslmode=require connect_timeout=10"
+            dsn = (f"host={connect_host} port={port} dbname={dbname} "
+                   f"user={user} password={password} sslmode=require connect_timeout=15")
             _connection_pool = pool.SimpleConnectionPool(minconn=1, maxconn=pool_size, dsn=dsn)
-        except Exception:
-            dsn = f"host={host} port={port} dbname={dbname} user={user} password={password} connect_timeout=10"
+        except Exception as ssl_err:
+            logger.warning(f"SSL connect failed ({ssl_err}), retrying without SSL...")
+            dsn = (f"host={connect_host} port={port} dbname={dbname} "
+                   f"user={user} password={password} connect_timeout=15")
             _connection_pool = pool.SimpleConnectionPool(minconn=1, maxconn=pool_size, dsn=dsn)
 
-        logger.info(f"✓ Pool created: {dbname}@{host}:{port}")
+        logger.info(f"✓ Pool created: {dbname}@{connect_host}:{port}")
     except Exception as e:
         logger.error(f"✗ Pool creation failed: {e}")
         _connection_pool = None

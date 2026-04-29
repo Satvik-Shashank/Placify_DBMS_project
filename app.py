@@ -38,7 +38,10 @@ config = get_config()
 app.config.from_object(config)
 app.secret_key = config.SECRET_KEY
 
-os.makedirs(config.UPLOAD_FOLDER, exist_ok=True)
+try:
+    os.makedirs(config.UPLOAD_FOLDER, exist_ok=True)
+except OSError:
+    pass  # Vercel read-only filesystem — /tmp is set in ProductionConfig
 
 # =============================================================================
 # TEMPLATE FILTERS
@@ -1193,8 +1196,15 @@ def not_found(e):
 
 @app.errorhandler(500)
 def server_error(e):
-    flash('A server error occurred. Please try again.', 'danger')
-    return redirect(url_for('index'))
+    import logging
+    logging.getLogger(__name__).error(f"500 error: {e}")
+    # Do NOT redirect here — that can cause infinite loops on Vercel.
+    # Render login page with an error flash via the response body directly.
+    try:
+        return render_template('auth/login.html',
+                               _error='A server error occurred. Please try again.'), 500
+    except Exception:
+        return '<h3>A server error occurred. Please try again later.</h3>', 500
 
 
 # =============================================================================
