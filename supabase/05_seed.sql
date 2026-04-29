@@ -46,21 +46,21 @@ ON CONFLICT (company_id) DO NOTHING;
 
 -- Admin user (password: admin123)
 INSERT INTO users (email, password_hash, role) VALUES
-('admin@placify.com', 'REPLACE_WITH_HASH_OF_admin123', 'admin')
+('admin@placify.com', 'scrypt:32768:8:1$dpfRBtvueQnTutzf$05327d09f12512b1ca0727a7251573bedd4ab6d7e5710ab20dddaf175a4733178e9de562e78aa1b4aa6a5447333f28d9ceb229aef84169e5adaca1a0092d5eeb', 'admin')
 ON CONFLICT (email) DO NOTHING;
 
 -- Student users (password: student123 for all)
 INSERT INTO users (email, password_hash, role) VALUES
-('student@placify.com', 'REPLACE_WITH_HASH_OF_student123', 'student'),
-('cs_arjun@placify.com', 'REPLACE_WITH_HASH_OF_student123', 'student'),
-('it_sneha@placify.com', 'REPLACE_WITH_HASH_OF_student123', 'student'),
-('ec_aisha@placify.com', 'REPLACE_WITH_HASH_OF_student123', 'student'),
-('me_vikram@placify.com', 'REPLACE_WITH_HASH_OF_student123', 'student')
+('student@placify.com', 'scrypt:32768:8:1$6tA52IC70zvhwOuN$cf5e16c24e1b2b9c080992466f10413ce66c6c96dbff24225aced7bbef256fa15bfd4d6951f209080b25741c2df84abc6ef0507dc74687b6eb96409c8be1d15a', 'student'),
+('cs_arjun@placify.com', 'scrypt:32768:8:1$6tA52IC70zvhwOuN$cf5e16c24e1b2b9c080992466f10413ce66c6c96dbff24225aced7bbef256fa15bfd4d6951f209080b25741c2df84abc6ef0507dc74687b6eb96409c8be1d15a', 'student'),
+('it_sneha@placify.com', 'scrypt:32768:8:1$6tA52IC70zvhwOuN$cf5e16c24e1b2b9c080992466f10413ce66c6c96dbff24225aced7bbef256fa15bfd4d6951f209080b25741c2df84abc6ef0507dc74687b6eb96409c8be1d15a', 'student'),
+('ec_aisha@placify.com', 'scrypt:32768:8:1$6tA52IC70zvhwOuN$cf5e16c24e1b2b9c080992466f10413ce66c6c96dbff24225aced7bbef256fa15bfd4d6951f209080b25741c2df84abc6ef0507dc74687b6eb96409c8be1d15a', 'student'),
+('me_vikram@placify.com', 'scrypt:32768:8:1$6tA52IC70zvhwOuN$cf5e16c24e1b2b9c080992466f10413ce66c6c96dbff24225aced7bbef256fa15bfd4d6951f209080b25741c2df84abc6ef0507dc74687b6eb96409c8be1d15a', 'student')
 ON CONFLICT (email) DO NOTHING;
 
 -- Company user (password: microsoft123)
 INSERT INTO users (email, password_hash, role, company_id) VALUES
-('microsoft@placify.com', 'REPLACE_WITH_HASH_OF_microsoft123', 'company',
+('microsoft@placify.com', 'scrypt:32768:8:1$0IF51HjJ1J4W9osm$c264a96514b97a8827a57ab1223468b14d8b6d2be5cf05b2c45c1f9d6690dff4c1fc05a385531c6d83dbb0f3d1ed551ae0d968bc8e5e83abb2c585bd1c2390e7', 'company',
     (SELECT company_id FROM companies WHERE name = 'Microsoft'))
 ON CONFLICT (email) DO NOTHING;
 
