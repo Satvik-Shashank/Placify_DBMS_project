@@ -3,6 +3,7 @@
 # File: db.py
 # =============================================================================
 
+import os
 import psycopg2
 from psycopg2 import pool, extras, Error
 from contextlib import contextmanager
@@ -17,7 +18,13 @@ logger = logging.getLogger(__name__)
 config = get_config()
 
 # =============================================================================
-# CONNECTION POOL
+# SERVERLESS DETECTION
+# =============================================================================
+
+IS_SERVERLESS = bool(os.environ.get('VERCEL') or os.environ.get('AWS_LAMBDA_FUNCTION_NAME'))
+
+# =============================================================================
+# CONNECTION POOL (used in long-running mode only)
 # =============================================================================
 
 # Lazy pool — created on first request, not at import time
@@ -35,16 +42,13 @@ def _is_pooler_host(host: str) -> bool:
 
 def _resolve_ipv4(hostname: str) -> str:
     """
-    Resolve hostname to an IPv4 address.
+    Resolve hostname to an IPv4 address using multiple strategies.
     Vercel serverless functions cannot make outbound IPv6 connections,
     but Supabase's direct DB hostname often resolves to IPv6.
-    Forcing AF_INET ensures we always get an IPv4 address.
-
-    NOTE: This is a workaround for the direct DB host. The recommended fix
-    is to switch to the Supabase connection pooler host (*.pooler.supabase.com)
-    which reliably resolves to IPv4 and also supports PgBouncer connection pooling.
     """
     import socket
+
+    # Strategy 1: Force AF_INET (IPv4 only)
     try:
         results = socket.getaddrinfo(hostname, None, socket.AF_INET, socket.SOCK_STREAM)
         if results:
@@ -52,7 +56,17 @@ def _resolve_ipv4(hostname: str) -> str:
             logger.info(f"✓ Resolved {hostname} → {ipv4} (IPv4 forced)")
             return ipv4
     except Exception as e:
-        logger.warning(f"IPv4 resolution failed for {hostname}: {e}, using hostname as-is")
+        logger.warning(f"IPv4 getaddrinfo failed for {hostname}: {e}")
+
+    # Strategy 2: Try gethostbyname (often returns IPv4)
+    try:
+        ipv4 = socket.gethostbyname(hostname)
+        logger.info(f"✓ Resolved {hostname} → {ipv4} (gethostbyname)")
+        return ipv4
+    except Exception as e:
+        logger.warning(f"gethostbyname failed for {hostname}: {e}")
+
+    logger.warning(f"All IPv4 resolution failed for {hostname}, using hostname as-is")
     return hostname
 
 
@@ -69,10 +83,6 @@ def _build_pooler_username(user: str, host: str) -> str:
         return user
 
     if _is_pooler_host(host):
-        # Extract project ref from pooler host: aws-0-<region>.pooler.supabase.com
-        # Project ref must come from the direct DB host pattern: db.<ref>.supabase.co
-        # Since we only have the pooler host here, we cannot auto-derive the ref.
-        # Log a clear warning so the developer knows what to fix.
         logger.warning(
             "⚠️  You are using the Supabase pooler host but your MYSQL_USER is plain "
             f"'{user}'. The pooler requires the username to be in the format "
@@ -82,60 +92,73 @@ def _build_pooler_username(user: str, host: str) -> str:
     return user
 
 
+def _build_dsn(sslmode: str = 'require') -> str:
+    """Build a DSN string from config, resolving IPv4 and adjusting for serverless."""
+    host     = config.MYSQL_HOST     or 'localhost'
+    port     = int(config.MYSQL_PORT or 5432)
+    dbname   = config.MYSQL_DATABASE or 'postgres'
+    user     = config.MYSQL_USER     or 'postgres'
+    password = config.MYSQL_PASSWORD or ''
+
+    if _is_pooler_host(host):
+        connect_host = host
+    else:
+        connect_host = _resolve_ipv4(host)
+
+    user = _build_pooler_username(user, host)
+
+    timeout = 10 if IS_SERVERLESS else 15
+
+    dsn = (
+        f"host={connect_host} port={port} dbname={dbname} "
+        f"user={user} password={password} "
+        f"connect_timeout={timeout} application_name=placify"
+    )
+    if sslmode:
+        dsn += f" sslmode={sslmode}"
+    return dsn
+
+
+def _create_single_connection():
+    """Create a single psycopg2 connection (for serverless mode)."""
+    for ssl in ('require', ''):
+        try:
+            dsn = _build_dsn(sslmode=ssl)
+            conn = psycopg2.connect(dsn)
+            label = 'SSL' if ssl else 'no-SSL'
+            logger.info(f"✓ Serverless connection created ({label})")
+            return conn
+        except Exception as e:
+            logger.warning(f"Serverless connect failed (ssl={ssl or 'off'}): {e}")
+    return None
+
+
 def _get_pool():
     global _connection_pool
     if _connection_pool is not None:
         return _connection_pool
 
-    try:
-        host     = config.MYSQL_HOST     or 'localhost'
-        port     = int(config.MYSQL_PORT or 5432)
-        dbname   = config.MYSQL_DATABASE or 'postgres'
-        user     = config.MYSQL_USER     or 'postgres'
-        password = config.MYSQL_PASSWORD or ''
-        pool_size = int(getattr(config, 'MYSQL_POOL_SIZE', 10))
+    pool_size = int(getattr(config, 'MYSQL_POOL_SIZE', 10))
 
-        # ── Supabase pooler vs. direct DB host ──────────────────────────────
-        # Direct DB host (db.*.supabase.co): resolves to IPv6 on many platforms.
-        #   → Force IPv4 resolution as a workaround.
-        # Pooler host (*.pooler.supabase.com): always IPv4, preferred for Flask.
-        #   → Use as-is; also requires username in 'postgres.<project-ref>' format.
-        if _is_pooler_host(host):
-            connect_host = host          # Pooler is always IPv4-safe
-        else:
-            connect_host = _resolve_ipv4(host)
+    # In serverless, use a tiny pool (effectively 1 connection)
+    if IS_SERVERLESS:
+        pool_size = 2
 
-        # Validate / warn about username format for pooler
-        user = _build_pooler_username(user, host)
-
-        # ── Build DSN and create pool ────────────────────────────────────────
-        # sslmode=require  → mandatory for Supabase (both direct and pooler)
-        # connect_timeout  → fail fast rather than hanging indefinitely
-        # application_name → shows up in pg_stat_activity for easier debugging
-        base_dsn = (
-            f"host={connect_host} port={port} dbname={dbname} "
-            f"user={user} password={password} "
-            f"connect_timeout=15 application_name=placify"
-        )
-
+    for ssl in ('require', ''):
         try:
-            dsn = base_dsn + " sslmode=require"
+            dsn = _build_dsn(sslmode=ssl)
             _connection_pool = pool.SimpleConnectionPool(
                 minconn=1, maxconn=pool_size, dsn=dsn
             )
-            logger.info(f"✓ Pool created (SSL): {dbname}@{connect_host}:{port} (size={pool_size})")
-        except Exception as ssl_err:
-            logger.warning(f"SSL connect failed ({ssl_err}), retrying without SSL…")
-            _connection_pool = pool.SimpleConnectionPool(
-                minconn=1, maxconn=pool_size, dsn=base_dsn
-            )
-            logger.info(f"✓ Pool created (no-SSL): {dbname}@{connect_host}:{port} (size={pool_size})")
+            label = 'SSL' if ssl else 'no-SSL'
+            logger.info(f"✓ Pool created ({label}), size={pool_size}")
+            return _connection_pool
+        except Exception as e:
+            logger.warning(f"Pool creation failed (ssl={ssl or 'off'}): {e}")
 
-    except Exception as e:
-        logger.error(f"✗ Pool creation failed: {e}")
-        _connection_pool = None
-
-    return _connection_pool
+    logger.error("✗ All pool creation attempts failed")
+    _connection_pool = None
+    return None
 
 
 def _reset_pool():
@@ -159,32 +182,77 @@ def _reset_pool():
 
 @contextmanager
 def get_connection():
+    """
+    Get a database connection. In serverless mode, creates a fresh connection
+    each time (no pool). In long-running mode, uses the connection pool.
+    """
     connection = None
-    p = _get_pool()
-    try:
-        if p is None:
+
+    if IS_SERVERLESS:
+        # ── Serverless path: individual connections ──────────────────────────
+        # Pools don't survive across cold starts and can hold stale connections.
+        # Try pool first (it might work in a warm container), then fall back
+        # to a direct connection.
+        p = _get_pool()
+        if p is not None:
+            try:
+                connection = p.getconn()
+                yield connection
+                return
+            except Exception as e:
+                logger.warning(f"Pool getconn failed in serverless, falling back: {e}")
+                _reset_pool()
+                connection = None
+            finally:
+                if connection and p:
+                    try:
+                        p.putconn(connection)
+                    except Exception:
+                        pass
+
+        # Fallback: direct connection
+        connection = _create_single_connection()
+        if connection is None:
+            host = config.MYSQL_HOST or '(not set)'
+            user = config.MYSQL_USER or '(not set)'
             raise Exception(
-                "Database connection pool unavailable. "
-                "Check MYSQL_HOST / MYSQL_USER / MYSQL_PASSWORD in your .env file."
+                f"Database connection failed (serverless). "
+                f"Host={host}, User={user}. "
+                f"Check your Vercel environment variables."
             )
-        connection = p.getconn()
-        yield connection
-    except pool.PoolError as pe:
-        # Pool exhausted or broken — reset so next request gets a fresh pool
-        logger.error(f"Pool error: {pe}")
-        _reset_pool()
-        raise
-    except Exception as e:
-        logger.error(f"Database connection error: {e}")
-        raise
-    finally:
-        if connection:
-            p = _get_pool()
-            if p:
-                try:
-                    p.putconn(connection)
-                except Exception as put_err:
-                    logger.warning(f"Could not return connection to pool: {put_err}")
+        try:
+            yield connection
+        finally:
+            try:
+                connection.close()
+            except Exception:
+                pass
+    else:
+        # ── Long-running path: connection pool ──────────────────────────────
+        p = _get_pool()
+        try:
+            if p is None:
+                raise Exception(
+                    "Database connection pool unavailable. "
+                    "Check MYSQL_HOST / MYSQL_USER / MYSQL_PASSWORD in your .env file."
+                )
+            connection = p.getconn()
+            yield connection
+        except pool.PoolError as pe:
+            logger.error(f"Pool error: {pe}")
+            _reset_pool()
+            raise
+        except Exception as e:
+            logger.error(f"Database connection error: {e}")
+            raise
+        finally:
+            if connection:
+                p = _get_pool()
+                if p:
+                    try:
+                        p.putconn(connection)
+                    except Exception as put_err:
+                        logger.warning(f"Could not return connection to pool: {put_err}")
 
 
 @contextmanager
